@@ -1,4 +1,4 @@
-import gradio as gr
+import streamlit as st
 import cv2
 import numpy as np
 from fpdf import FPDF
@@ -56,19 +56,22 @@ def save_as_pdf(output_dict):
 
     pdf.output("image_measurements.pdf")
 
-def main(image, grid_step, show_grid):
-    image_with_grid = overlay_grid(image, grid_step, show_grid)
-    output_dict = measure_image(image, grid_step)
-    save_as_pdf(output_dict)
-    return image_with_grid
+def main():
+    st.title("Image Measurement Tool")
+    
+    uploaded_image = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
-iface = gr.Interface(
-    fn=main,
-    inputs=[gr.inputs.Image(), gr.components.Slider(minimum=10, maximum=100, step=1, default=20), gr.components.Checkbox()],
+    if uploaded_image is not None:
+        image = cv2.imdecode(np.fromstring(uploaded_image.read(), np.uint8), 1)
+        grid_step = st.slider("Grid Step", 10, 100, 20)
+        show_grid = st.checkbox("Show Grid")
 
-    outputs=[gr.outputs.Image(type="numpy")],
-    live=True,
-    capture_session=True
-)
+        image_with_grid = overlay_grid(image, grid_step, show_grid)
+        output_dict = measure_image(image, grid_step)
+        save_as_pdf(output_dict)
 
-iface.launch(share=True)
+        st.image(image_with_grid, channels="BGR")
+        st.download_button("Download PDF Report", data=open("image_measurements.pdf", "rb").read(), file_name="image_measurements.pdf")
+
+if __name__ == "__main__":
+    main()
